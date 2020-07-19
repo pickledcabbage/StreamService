@@ -23,18 +23,42 @@ def publish_call():
     resp = requests.post(url, json=data)
     print(resp.json())
 
-def scan_call():
+def get_quote_call():
+    url = "http://localhost:5001/quote/AAPL"
+
+    resp = requests.get(url)
+    print(resp.json())
+
+def get_quotes_call():
+    url = "http://localhost:5001/quotes/"
+    params = {
+        'symbols': ','.join(['AAPL', 'MSFT'])
+    }
+    resp = requests.get(url, params=params)
+    print(resp.json())
+
+def scan_call(tb="TopicSubscribers"):
     ddb = boto3.client('dynamodb', endpoint_url='http://localhost:8000')
     response = ddb.scan(
-        TableName="TopicSubscribers"
+        TableName=tb
     )
-    for i in response['Items']:
-        print(i)
+    #for i in response['Items']:
+    #    print(i)
+    return response['Items']
 
-def nuke_ddb():
+def print_stock(stock):
+    temp = "{:s} {:8.2f}".format(stock['symbol']['S'], float(stock['last_trade_price']['N']))
+    print(temp)
+
+def scan_call_print(tb="TopicSubscribers"):
+    quotes = scan_call(tb)
+    for i in quotes:
+        print_stock(i)
+
+def nuke_ddb(tb='TopicSubscribers'):
     ddb = boto3.client('dynamodb', endpoint_url='http://localhost:8000')
     response = ddb.delete_table(
-        TableName='TopicSubscribers'
+        TableName=tb
     )
 
 def show_tables():
@@ -42,4 +66,4 @@ def show_tables():
     response = ddb.list_tables()
     print(response)
 
-publish_call()
+scan_call_print('instruments')
